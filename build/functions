@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -e
+
+occ_cmd() {
+    sudo -u www-data php ${OWNCLOUD_ROOT_DIR}/occ "$@"
+}
+
+# $1 config parent. e.g. system
+# $2 config key. e.g. db_name
+# $3 value
+occ_config_set() {
+    local value=${3}
+    if [[ -z "${value}" ]]; then
+	occ_cmd config:${1}:delete ${2}
+    else
+	occ_cmd config:${1}:set ${2} --value=${value}
+    fi
+}
+
+# $1 config parent. e.g. system
+# $2 config key. e.g. db_name
+occ_config_get(){
+    occ_cmd config:${1}:get ${2}
+}
+
+occ_init_basic(){
+    # install according to
+    # https://doc.owncloud.org/server/8.2/admin_manual/configuration_server/occ_command.html
+
+    if [[ -n "$(occ_cmd | grep 'not installed')" ]]; then
+	echo "Start fresh install"
+	sudo -u www-data php /var/www/html/occ maintenance:install \
+	    --database="$DB_TYPE" \
+	    --database-host="${DB_HOST}" \
+	    --database-name="${DB_NAME}" \
+	    --database-user="${DB_USER}" \
+	    --database-pass="${DB_PASS}" \
+	    --admin-user="${ADMIN_USER}" \
+	    --admin-pass="${ADMIN_PASS}" \
+	    --data-dir="${DATA_DIR}" \
+	    --no-interaction
+    else
+	#[[ "${DB_TYPE}" == "sqlite" ]] && DB_TYPE="sqlite3"
+	occ_config_set system dbtype "${DB_TYPE}"   # TODO: db:convert-type
+	occ_config_set system dbhost "${DB_HOST}"
+	occ_config_set system dbname "${DB_NAME}"
+	occ_config_set system dbuser "${DB_USER}"
+	occ_config_set system dbpassword "${DB_PASS}"
+	occ_config_set system datadirectory "${DATA_DIR}"
+    fi
+}
+

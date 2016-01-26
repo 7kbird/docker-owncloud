@@ -1,0 +1,66 @@
+#!/bin/bash
+set -e
+source ${OWNCLOUD_BUILD_DIR}/functions
+
+owncloud_app_enable() {
+    occ_cmd app:enable ${1}
+}
+owncloud_app_disable() {
+    occ_cmd app:disable ${1}
+}
+
+# Install and enable an application
+# NOTE: This function does not check app existance. Please use only in Dockerfile
+#
+# $1 app name, this will be the app folder name
+# $2 app url
+# $3 app file type(zip, tar, tar.gz, tar.bz2), if not set, will try extract from url
+owncloud_app_install(){
+    local app=$1
+    local url=$2
+    local file_type=${3:-$(echo ${url}|awk -F'[.]' '{print $(NF-1)"."$NF}')}
+
+    local app_tmp_dir=$(mktemp -d)
+    local app_extract_dir=${app_tmp_dir}/extracted
+    
+    echo "APP ${app}: [1/4]downloading..."
+    cd ${app_tmp_dir}
+    curl -o ${app}.${file_type} -L "${url}"
+    local download_file=${app_tmp_dir}/${app}.${file_type}
+
+    echo "APP ${app}: [2/4]extracting..."
+    mkdir ${app_extract_dir}
+    cd ${app_extract_dir}  
+    case ${file_type} in
+	zip)
+	    unzip "${download_file}"
+	    ;;
+	tar)
+	    tar -xf ${download_file}
+	    ;;
+	tar.gz)
+	    tar -xzf ${download_file}
+	    ;;
+	tar.bz2)
+	    tar -xjf ${download_file}
+	    ;;
+	*)
+	    echo "Error: app file format not supported:[${file_type}]"
+	    return 1
+	    ;;
+    esac
+
+    local app_dest_dir=${OWNCLOUD_ROOT_DIR}/apps/${app}
+    local files=("${app_extract_dir}"/*)
+    if (( ${#files[@]} == 1 )) && [[ -d "${files[0]}" ]] ; then
+	mkdir -p ${app_dest_dir}
+	mv ${app_extract_dir}/*/* ${app_dest_dir}/
+    else
+	mv ${app_extract_dir} ${app_dest_dir}
+    fi
+
+    rm -fr ${app_tmp_dir}
+
+    echo "APP ${app}: [3/4]enable app..."
+    owncloud_app_enable ${app} && echo "APP ${app}: [4/4]install success."
+}

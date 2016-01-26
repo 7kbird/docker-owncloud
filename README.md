@@ -8,4 +8,11 @@
 - **DB_USER**: User name to connect to the database(default: `owncloud`)
 - **DB_PASS**: Password of the database user
 - **ADMIN_USER**: User name of the admin account (default: "admin")
-- **ADMIN_PASS**: Password of the admin account
+- **ADMIN_PASS**: Password of the admin account. Password is only set on the first run (default: "pass4owncloud")
+
+## Quick Start
+
+```sh
+docker pull 7kbird/owncloud
+docker run -d --name=owncloud -v /srv/docker/owncloud:/owncloud_data -p 80:80 7kbird/owncloud
+```
