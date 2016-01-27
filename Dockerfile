@@ -40,6 +40,7 @@ RUN a2enmod rewrite
 
 ENV OWNCLOUD_VERSION 8.2.2
 ENV OWNCLOUD_ROOT_DIR /var/www/html
+ENV OWNCLOUD_DATA_DIR /owncloud_data
 
 RUN curl -fsSL -o owncloud.tar.bz2 \
 		"https://download.owncloud.org/community/owncloud-${OWNCLOUD_VERSION}.tar.bz2" \
@@ -48,10 +49,8 @@ RUN curl -fsSL -o owncloud.tar.bz2 \
 	&& gpg --verify owncloud.tar.bz2.asc \
 	&& tar -xjf owncloud.tar.bz2 --strip-components=1 -C ${OWNCLOUD_ROOT_DIR} \
 	&& rm owncloud.tar.bz2 owncloud.tar.bz2.asc \
-	&& mkdir -p /owncloud_data/data ${OWNCLOUD_ROOT_DIR}/data \
-	&& mv ${OWNCLOUD_ROOT_DIR}/config /owncloud_data/ \
-	&& ln -s /owncloud_data/config ${OWNCLOUD_ROOT_DIR}/config \
-	&& chown -R www-data /var/www/html /owncloud_data
+	&& mkdir -p ${OWNCLOUD_DATA_DIR} ${OWNCLOUD_ROOT_DIR}/data \
+	&& chown -R www-data /var/www/html ${OWNCLOUD_DATA_DIR}
 
 ENV OWNCLOUD_BUILD_DIR /usr/owncloud_build
 COPY build ${OWNCLOUD_BUILD_DIR}
@@ -60,6 +59,7 @@ COPY docker-entrypoint.sh /entrypoint.sh
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-VOLUME /owncloud_data
+VOLUME ${OWNCLOUD_DATA_DIR}
+
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["apache2-foreground"]

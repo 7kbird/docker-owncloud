@@ -1,27 +1,47 @@
 #!/bin/bash
 
-set -e
-
 occ_cmd() {
     sudo -u www-data php ${OWNCLOUD_ROOT_DIR}/occ "$@"
 }
 
-# $1 config parent. e.g. system
-# $2 config key. e.g. db_name
-# $3 value
+# $1 config key. e.g. db_name
+occ_config_get(){
+    occ_cmd config:system:get ${1}
+}
+
+# $1 config key. e.g. db_name
+# $2 value
 occ_config_set() {
-    local value=${3}
+    local key=${1}
+    local value=${2}
     if [[ -z "${value}" ]]; then
-	occ_cmd config:${1}:delete ${2}
+	if [[ -n "$(occ_config_get ${key})" ]]; then occ_cmd config:system:delete ${key}; fi
     else
-	occ_cmd config:${1}:set ${2} --value=${value}
+	occ_cmd config:system:set ${key} --value="${value}"
     fi
 }
 
-# $1 config parent. e.g. system
-# $2 config key. e.g. db_name
-occ_config_get(){
-    occ_cmd config:${1}:get ${2}
+# $1 key
+# $2 array with ' ' as seperator, if ' ' is in array element, use '\ '.Use "\\ " for bash command
+occ_config_set_array() {
+    local key="${1}"
+    local values="${2}"
+
+    if [[ -z "${values}" ]]; then
+	if [[ -n "$(occ_config_get ${key})" ]]; then occ_cmd config:system:delete ${key}; fi
+    else
+	read -r -d '' parse_scripts <<"EOF"
+$value=preg_split("/(?<!(\\\\)) +/", $argv[2]);
+$value=preg_replace("/\\\\ /", " ", $value);
+echo json_encode(array('system' => array($argv[1]=>$value)));
+EOF
+	local json_file=$(mktemp --suffix=_${key}.json)
+	sudo -u www-data php -r "${parse_scripts}" "${key}" "${values}" > ${json_file}
+	chown www-data ${json_file}
+	occ_cmd config:import ${json_file}
+	rm ${json_file}
+    fi
+
 }
 
 occ_init_basic(){
@@ -30,7 +50,7 @@ occ_init_basic(){
 
     if [[ -n "$(occ_cmd | grep 'not installed')" ]]; then
 	echo "Start fresh install"
-	sudo -u www-data php /var/www/html/occ maintenance:install \
+	occ_cmd maintenance:install \
 	    --database="$DB_TYPE" \
 	    --database-host="${DB_HOST}" \
 	    --database-name="${DB_NAME}" \
@@ -38,16 +58,23 @@ occ_init_basic(){
 	    --database-pass="${DB_PASS}" \
 	    --admin-user="${ADMIN_USER}" \
 	    --admin-pass="${ADMIN_PASS}" \
-	    --data-dir="${DATA_DIR}" \
+	    --data-dir="${OWNCLOUD_DATA_DIR}" \
 	    --no-interaction
     else
-	#[[ "${DB_TYPE}" == "sqlite" ]] && DB_TYPE="sqlite3"
-	occ_config_set system dbtype "${DB_TYPE}"   # TODO: db:convert-type
-	occ_config_set system dbhost "${DB_HOST}"
-	occ_config_set system dbname "${DB_NAME}"
-	occ_config_set system dbuser "${DB_USER}"
-	occ_config_set system dbpassword "${DB_PASS}"
-	occ_config_set system datadirectory "${DATA_DIR}"
+	occ_config_set dbtype "${DB_TYPE}"   # TODO: db:convert-type
+	occ_config_set dbhost "${DB_HOST}"
+	occ_config_set dbname "${DB_NAME}"
+	occ_config_set dbuser "${DB_USER}"
+	occ_config_set dbpassword "${DB_PASS}"
+	occ_config_set datadirectory "${OWNCLOUD_DATA_DIR}"
     fi
 }
 
+occ_init(){
+    occ_init_basic
+
+    occ_config_set default_language ${OC_DEFAULT_LANGUAGE}
+    occ_config_set defaultapp ${OC_DEFAULT_APP}
+    occ_config_set_array trusted_domains "${OC_TRUSTED_DOMAINS}"
+    occ_config_set has_internet_connection ${OC_HAS_INTERNET}
+}

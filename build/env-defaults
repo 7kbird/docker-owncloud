@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 if [[ -n "${MYSQL_PORT_3306_TCP_ADDR}" ]]; then
   DB_TYPE=${DB_TYPE:-mysql}
   DB_HOST=${DB_HOST:-mysql}
@@ -20,4 +18,7 @@ DB_PASS=${DB_PASS:-}
 ADMIN_USER=${ADMIN_USER:-admin}
 ADMIN_PASS=${ADMIN_PASS:-pass4owncloud}
 
-DATA_DIR=${DATA_DIR:-/owncloud_data/data}
+OC_DEFAULT_LANGUAGE=${OC_DEFAULT_LANGUAGE:-}
+OC_DEFAULT_APP=${OC_DEFAULT_APP:-}
+OC_TRUSTED_DOMAINS=${OC_TRUSTED_DOMAINS:-localhost}
+OC_HAS_INTERNET=${OC_HAS_INTERNET:-true}
