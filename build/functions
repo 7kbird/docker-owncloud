@@ -70,11 +70,28 @@ occ_init_basic(){
     fi
 }
 
+occ_init_smtp(){
+    if [[ -n "${OC_SMTP_HOST}" ]]; then
+	occ_config_set mail_smtpmode "smtp"
+	occ_config_set mail_smtphost "${OC_SMTP_HOST}"
+	occ_config_set mail_smtpsecure "${OC_SMTP_SECURE}"
+	occ_config_set mail_smtpport "${OC_SMTP_PORT}"
+        occ_config_set mail_from_address "$(echo "${OC_SMTP_EMAIL}" | cut -d '@' -f 1)"
+	occ_config_set mail_domain "$(echo "${OC_SMTP_EMAIL}" | cut -d '@' -f 2)"
+
+	occ_config_set mail_smtpauthtype "${OC_SMTP_AUTH_TYPE}"
+	occ_config_set mail_smtpauth "true"
+	occ_config_set mail_smtpname "${OC_SMTP_USER}"
+	occ_config_set mail_smtppassword "${OC_SMTP_PASS}"
+    fi
+}
+
 occ_init(){
     occ_init_basic
 
-    occ_config_set default_language ${OC_DEFAULT_LANGUAGE}
-    occ_config_set defaultapp ${OC_DEFAULT_APP}
+    occ_config_set default_language "${OC_DEFAULT_LANGUAGE}"
+    occ_config_set defaultapp "${OC_DEFAULT_APP}"
     occ_config_set_array trusted_domains "${OC_TRUSTED_DOMAINS}"
-    occ_config_set has_internet_connection ${OC_HAS_INTERNET}
+    occ_config_set has_internet_connection "${OC_HAS_INTERNET}"
+    occ_init_smtp
 }
