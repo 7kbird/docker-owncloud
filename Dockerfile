@@ -40,18 +40,22 @@ RUN a2enmod rewrite
 
 ENV OWNCLOUD_VERSION 8.2.2
 ENV OWNCLOUD_ROOT_DIR /var/www/html
-ENV OWNCLOUD_DATA_DIR /owncloud_data
+ENV OWNCLOUD_STORE_DIR /owncloud_data
 
-RUN curl -fsSL -o owncloud.tar.bz2 \
-		"https://download.owncloud.org/community/owncloud-${OWNCLOUD_VERSION}.tar.bz2" \
-	&& curl -fsSL -o owncloud.tar.bz2.asc \
-		"https://download.owncloud.org/community/owncloud-${OWNCLOUD_VERSION}.tar.bz2.asc" \
-	&& gpg --verify owncloud.tar.bz2.asc \
-	&& tar -xjf owncloud.tar.bz2 --strip-components=1 -C ${OWNCLOUD_ROOT_DIR} \
-	&& rm owncloud.tar.bz2 owncloud.tar.bz2.asc \
-	&& mkdir -p ${OWNCLOUD_DATA_DIR} ${OWNCLOUD_ROOT_DIR}/data \
-	&& chown -R www-data /var/www/html ${OWNCLOUD_DATA_DIR}
+RUN filename="owncloud-${OWNCLOUD_VERSION}.tar.bz2" && curl -fsSL -o "${filename}" \
+	"https://download.owncloud.org/community/${filename}" \
+	&& curl -fsSL -o ${filename}.asc \
+		"https://download.owncloud.org/community/${filename}.asc" \
+	&& curl https://download.owncloud.org/community/${filename}.md5 | md5sum -c - \
+	&& gpg --verify ${filename}.asc \
+	&& tar -xjf ${filename} --strip-components=1 -C ${OWNCLOUD_ROOT_DIR} \
+	&& rm ${filename} ${filename}.asc \
+	&& mv ${OWNCLOUD_ROOT_DIR}/config ${OWNCLOUD_ROOT_DIR}/config_back \
+	&& mkdir -p ${OWNCLOUD_ROOT_DIR}/data ${OWNCLOUD_STORE_DIR}/data \
+	&& ln -s ${OWNCLOUD_STORE_DIR}/config ${OWNCLOUD_ROOT_DIR}/config \
+	&& chown -R www-data /var/www/html ${OWNCLOUD_STORE_DIR}
 
+ENV OWNCLOUD_DATA_DIR ${OWNCLOUD_STORE_DIR}/data
 ENV OWNCLOUD_BUILD_DIR /usr/owncloud_build
 COPY build ${OWNCLOUD_BUILD_DIR}
 COPY docker-entrypoint.sh /entrypoint.sh
@@ -59,7 +63,7 @@ COPY docker-entrypoint.sh /entrypoint.sh
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-VOLUME ${OWNCLOUD_DATA_DIR}
+VOLUME ${OWNCLOUD_STORE_DIR}
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["apache2-foreground"]
