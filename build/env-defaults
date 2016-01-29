@@ -3,9 +3,9 @@
 if [[ -n "${MYSQL_PORT_3306_TCP_ADDR}" ]]; then
   DB_TYPE=${DB_TYPE:-mysql}
   DB_HOST=${DB_HOST:-mysql}
-elif [[ -n "${POSTGRESQL_PORT_5432_TCP_ADDR}" ]]; then
+elif [[ -n "${PGSQL_PORT_5432_TCP_ADDR}" ]]; then
   DB_TYPE=${DB_TYPE:-pgsql}
-  DB_HOST=${DB_HOST:-postgresql}
+  DB_HOST=${DB_HOST:-pgsql}
 else
   DB_TYPE=${DB_TYPE:-sqlite}
   DB_HOST=${DB_HOST:-localhost}
