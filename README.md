@@ -20,6 +20,7 @@
 - **OC_SMTP_PASS**: The user password
 - **OC_SMTP_EMAIL**: Email address for the user, like this: ``demo@example.com``(default: ``OC_SMTP_USER`` is used)
 - **OC_SMTP_AUTH_TYPE**: Specify the SMTP authentication method. Defaults to ``LOGIN`` if ``OC_SMTP_USER`` is set.
+- **OC_UPLOAD_MAX_FILESIZE**: Maximum file size for upload. (default: ``513M``)
 
 ## Quick Start
 

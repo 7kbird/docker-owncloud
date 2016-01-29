@@ -12,6 +12,6 @@ fi
 chown -R www-data "${OWNCLOUD_STORE_DIR}"
 
 # Config owncloud
-occ_init
+occ_init_config
 
 exec "$@"

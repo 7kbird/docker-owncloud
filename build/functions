@@ -44,6 +44,17 @@ EOF
 
 }
 
+# $1 php option name
+# $2 values
+# $3 .htaccess file , default: ${OWNCLOUD_ROOT_DIR}/.htaccess
+htaccess_php_set(){
+    local option_name=${1}
+    local option_values=${2}
+    local file=${3:-${OWNCLOUD_ROOT_DIR}/.htaccess}
+
+    sed -i "s/php_value[ tab]\+${option_name}.*/php_value ${option_name} ${option_values}/" "${file}"
+}
+
 occ_init_basic(){
     # install according to
     # https://doc.owncloud.org/server/8.2/admin_manual/configuration_server/occ_command.html
@@ -86,12 +97,16 @@ occ_init_smtp(){
     fi
 }
 
-occ_init(){
+occ_init_config(){
     occ_init_basic
 
     occ_config_set default_language "${OC_DEFAULT_LANGUAGE}"
     occ_config_set defaultapp "${OC_DEFAULT_APP}"
     occ_config_set_array trusted_domains "${OC_TRUSTED_DOMAINS}"
     occ_config_set has_internet_connection "${OC_HAS_INTERNET}"
+
     occ_init_smtp
+    
+    htaccess_php_set upload_max_filesize "${OC_UPLOAD_MAX_FILESIZE}"
+    htaccess_php_set post_max_size "${OC_UPLOAD_MAX_FILESIZE}"
 }
